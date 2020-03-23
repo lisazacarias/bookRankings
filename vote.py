@@ -57,6 +57,8 @@ def adjustResults(lastPlace, responses):
                 response.title2rank[titleToMoveUp] = i
                 response.rank2title[i] = titleToMoveUp
 
+            response.rank2title.pop(lastPlace)
+
 
 def vote():
 
@@ -86,7 +88,7 @@ def vote():
 
         lastPlace = 27
 
-        while not winner.isMajority:
+        while lastPlace > 1:
             print(ROUND_STR_FORMATTER.format(N=votingRound))
             adjustResults(lastPlace, responses)
             lastPlace -= 1
@@ -97,4 +99,4 @@ def vote():
 
 
 if __name__ == "__main__":
-    print(vote())
+    print("\nWINNER IS: {WINNER}\n".format(WINNER=vote()))
