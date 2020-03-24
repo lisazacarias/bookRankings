@@ -4,7 +4,9 @@ from six import next
 from typing import Dict, List
 
 DATE_COL = 0
-ROUND_STR_FORMATTER = "\n----ROUND {N}----\n"
+ROUND_STR_FORMATTER = "\n----ELIMINATION ROUND {N}----\n"
+# INPUT_FILE = "rankings.csv"
+INPUT_FILE = "/Users/zacarias/Downloads/rankingsUSingers.csv"
 
 
 class Response:
@@ -27,21 +29,28 @@ class TallyObj:
         self.isMajority = isMajority
 
 
-def getRankTally(rank: int, responses: List[Response]):
+def getRankTally(rank: int, responses: List[Response], popList: List[str]):
     counter = defaultdict(int)
 
     for response in responses:
         counter[response.rank2title[rank]] += 1
 
     res = max(counter)
-    tally = counter[res]
+    winningTally = counter[res]
 
-    return TallyObj(val=res, tally=tally,
-                    isMajority=(tally / len(responses) > 0.5))
+    counter.pop(res)
+
+    for title, tally in counter.items():
+        if tally == winningTally:
+            popList.append(title)
+
+    return TallyObj(val=res, tally=winningTally,
+                    isMajority=(winningTally / len(responses) > 0.5))
 
 
-def adjustResults(lastPlace, responses):
-    loser = getRankTally(lastPlace, responses).val
+def adjustResults(lastPlace, responses, popList: List[str]):
+    loser = (getRankTally(lastPlace, responses, popList).val
+             if not popList else popList.pop(0))
     print("LOSER IS: {LOSER}".format(LOSER=loser))
 
     for response in responses:
@@ -62,7 +71,7 @@ def adjustResults(lastPlace, responses):
 
 def vote():
 
-    with open("rankings.csv") as rankFile:
+    with open(INPUT_FILE) as rankFile:
 
         resultReader = reader(rankFile)
 
@@ -82,21 +91,25 @@ def vote():
 
         votingRound = 1
 
-        winner = getRankTally(1, responses)
-        if winner.isMajority:
+        winnerList = []
+
+        winner = getRankTally(1, responses, winnerList)
+        if winner.isMajority and not winnerList:
             return winner.val
 
-        lastPlace = 27
+        lastPlace = len(header)
+
+        popList = []
 
         while lastPlace > 1:
             print(ROUND_STR_FORMATTER.format(N=votingRound))
-            adjustResults(lastPlace, responses)
+            adjustResults(lastPlace, responses, popList)
             lastPlace -= 1
             votingRound += 1
-            winner = getRankTally(1, responses)
+            winner = getRankTally(1, responses, [])
 
         return winner.val
 
 
 if __name__ == "__main__":
-    print("\nWINNER IS: {WINNER}\n".format(WINNER=vote()))
+    print("\n----FINAL RESULT----\nWINNER IS: {WINNER}\n".format(WINNER=vote()))
