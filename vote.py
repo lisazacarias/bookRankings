@@ -5,7 +5,7 @@ from six import next
 DATE_COL = 0
 
 # INPUT_FILE = "rankings.csv"
-INPUT_FILE = "/Users/zacarias/Downloads/rankingsUSingers.csv"
+INPUT_FILE = "rankingsUSingers.csv"
 
 TALLIES = {}
 
@@ -19,7 +19,8 @@ class TallyObj:
     def __gt__(self, other):
 
         def compareTallies(lastPlace, scoreSelf, scoreOther):
-            while True:
+
+            while lastPlace > 1:
                 scoreSelf += self.tallies[lastPlace]
                 scoreOther += other.tallies[lastPlace]
 
@@ -27,6 +28,8 @@ class TallyObj:
                     return scoreSelf > scoreOther
 
                 lastPlace -= 1
+
+            return self.val > other.val
 
         if not isinstance(other, TallyObj):
             return False
