@@ -3,24 +3,11 @@ from collections import defaultdict
 from six import next
 
 DATE_COL = 0
-ROUND_STR_FORMATTER = "\n----ELIMINATION ROUND {N}----\n"
+
 # INPUT_FILE = "rankings.csv"
 INPUT_FILE = "/Users/zacarias/Downloads/rankingsUSingers.csv"
 
 TALLIES = {}
-
-
-class Response:
-
-    def __init__(self, fileRow, fileHeader):
-        self.title2rank = {}
-        self.rank2title = {}
-
-        for idx, rank in enumerate(fileRow):
-            TALLIES[fileHeader[idx]][int(rank)] += 1
-
-            self.title2rank[fileHeader[idx]] = int(rank)
-            self.rank2title[int(rank)] = fileHeader[idx]
 
 
 class TallyObj:
@@ -72,14 +59,13 @@ def vote():
         for title in header:
             TALLIES[title] = defaultdict(int)
 
-        responses = []
-
         for row in resultReader:
 
             # Discarding date column again
             row.pop(DATE_COL)
 
-            responses.append(Response(row, header))
+            for idx, rank in enumerate(row):
+                TALLIES[header[idx]][int(rank)] += 1
 
         tallyObjs = []
 
@@ -93,8 +79,7 @@ def vote():
 
         while tallyObjs:
             print("BOOK {N}:".format(N=n))
-            print("\t{TITLE}\n".format(TITLE=tallyObjs.pop().val)
-                  .replace("(", "").replace(")", ""))
+            print("\t{TITLE}\n".format(TITLE=tallyObjs.pop().val))
             n += 1
 
 
