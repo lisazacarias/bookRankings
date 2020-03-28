@@ -1,12 +1,13 @@
 from csv import reader
 from collections import defaultdict
 from six import next
-from typing import Dict, List
 
 DATE_COL = 0
 ROUND_STR_FORMATTER = "\n----ELIMINATION ROUND {N}----\n"
 # INPUT_FILE = "rankings.csv"
 INPUT_FILE = "/Users/zacarias/Downloads/rankingsUSingers.csv"
+
+TALLIES = {}
 
 
 class Response:
@@ -16,6 +17,7 @@ class Response:
         self.rank2title = {}
 
         for idx, rank in enumerate(fileRow):
+            TALLIES[fileHeader[idx]][int(rank)] += 1
 
             self.title2rank[fileHeader[idx]] = int(rank)
             self.rank2title[int(rank)] = fileHeader[idx]
@@ -23,50 +25,37 @@ class Response:
 
 class TallyObj:
 
-    def __init__(self, val, tally, isMajority):
+    def __init__(self, val, tallies):
         self.val = val
-        self.tally = tally
-        self.isMajority = isMajority
+        self.tallies = tallies
 
+    def __gt__(self, other):
 
-def getRankTally(rank: int, responses: List[Response], popList: List[str]):
-    counter = defaultdict(int)
+        def compareTallies(lastPlace, scoreSelf, scoreOther):
+            while True:
+                scoreSelf += self.tallies[lastPlace]
+                scoreOther += other.tallies[lastPlace]
 
-    for response in responses:
-        counter[response.rank2title[rank]] += 1
+                if scoreSelf != scoreOther:
+                    return scoreSelf > scoreOther
 
-    res = max(counter)
-    winningTally = counter[res]
+                lastPlace -= 1
 
-    counter.pop(res)
+        if not isinstance(other, TallyObj):
+            return False
 
-    for title, tally in counter.items():
-        if tally == winningTally:
-            popList.append(title)
+        lastPlaceSelf = max(self.tallies, key=int)
+        lastPlaceOther = max(other.tallies, key=int)
 
-    return TallyObj(val=res, tally=winningTally,
-                    isMajority=(winningTally / len(responses) > 0.5))
+        if lastPlaceSelf != lastPlaceOther:
+            return lastPlaceSelf > lastPlaceOther
 
+        scoreSelf = self.tallies[lastPlaceSelf]
+        scoreOther = other.tallies[lastPlaceOther]
 
-def adjustResults(lastPlace, responses, popList: List[str]):
-    loser = (getRankTally(lastPlace, responses, popList).val
-             if not popList else popList.pop(0))
-    print("LOSER IS: {LOSER}".format(LOSER=loser))
+        lastPlaceSelf -= 1
 
-    for response in responses:
-
-        loserRank = response.title2rank[loser]
-        response.title2rank.pop(loser)
-        response.rank2title.pop(loserRank)
-
-        if loserRank != lastPlace:
-            for i in range(loserRank, lastPlace):
-                titleToMoveUp = response.rank2title[i + 1]
-
-                response.title2rank[titleToMoveUp] = i
-                response.rank2title[i] = titleToMoveUp
-
-            response.rank2title.pop(lastPlace)
+        return compareTallies(lastPlaceSelf, scoreSelf, scoreOther)
 
 
 def vote():
@@ -80,6 +69,9 @@ def vote():
         # Date column is unnecessary
         header.pop(DATE_COL)
 
+        for title in header:
+            TALLIES[title] = defaultdict(int)
+
         responses = []
 
         for row in resultReader:
@@ -89,27 +81,22 @@ def vote():
 
             responses.append(Response(row, header))
 
-        votingRound = 1
+        tallyObjs = []
 
-        winnerList = []
+        for title, tallies in TALLIES.items():
+            tallyObjs.append(TallyObj(title, tallies))
 
-        winner = getRankTally(1, responses, winnerList)
-        if winner.isMajority and not winnerList:
-            return winner.val
+        tallyObjs = sorted(tallyObjs)
+        tallyObjs.reverse()
 
-        lastPlace = len(header)
+        n = 1
 
-        popList = []
-
-        while lastPlace > 1:
-            print(ROUND_STR_FORMATTER.format(N=votingRound))
-            adjustResults(lastPlace, responses, popList)
-            lastPlace -= 1
-            votingRound += 1
-            winner = getRankTally(1, responses, [])
-
-        return winner.val
+        while tallyObjs:
+            print("BOOK {N}:".format(N=n))
+            print("\t{TITLE}\n".format(TITLE=tallyObjs.pop().val)
+                  .replace("(", "").replace(")", ""))
+            n += 1
 
 
 if __name__ == "__main__":
-    print("\n----FINAL RESULT----\nWINNER IS: {WINNER}\n".format(WINNER=vote()))
+    vote()
