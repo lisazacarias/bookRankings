@@ -4,6 +4,9 @@ from six import next
 from argparse import ArgumentParser
 
 
+TEST_MODE = False
+
+
 class BookRanker:
 
     def __init__(self, inputFile, colsToDelete, question):
@@ -19,6 +22,10 @@ class BookRanker:
             self.tallies = tallies
 
         def __gt__(self, other):
+            if TEST_MODE:
+                print()
+                print(self.title)
+                print(other.title)
 
             def compareTallies(lastPlace, scoreSelf, scoreOther):
 
@@ -29,11 +36,15 @@ class BookRanker:
                     scoreOther += other.tallies[lastPlace]
 
                     if scoreSelf != scoreOther:
+                        if TEST_MODE:
+                            print("Found after scoring with {place}".format(place=lastPlace))
                         return scoreSelf > scoreOther
 
                     lastPlace -= 1
 
                 # If their scores are equal, just go alphabetically
+                if TEST_MODE:
+                    print("Found alphabetically")
                 return self.title > other.title
 
             if not isinstance(other, type(self)):
@@ -45,10 +56,17 @@ class BookRanker:
             # The idea is to pick books that everyone can tolerate reasonably
             # well, so the "loser" is the book that's most hated by anyone
             if lastPlaceSelf != lastPlaceOther:
+                if TEST_MODE:
+                    print("found by last place")
                 return lastPlaceSelf > lastPlaceOther
 
             startingScoreSelf = self.tallies[lastPlaceSelf]
             startingScoreOther = other.tallies[lastPlaceOther]
+
+            if startingScoreSelf != startingScoreOther:
+                if TEST_MODE:
+                    print("found by last place tally")
+                return startingScoreSelf > startingScoreOther
 
             return compareTallies(lastPlaceSelf - 1, startingScoreSelf,
                                   startingScoreOther)
@@ -113,7 +131,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--columns',
                         help='Column indices to ignore in input file (will be 0 by default)',
                         type=int, nargs='+', default=[0])
-    
+
     parser.add_argument('-q', '--question',
                         help='Question string from the form to delete from titles'
                              ' (will be \'Please rank your choices \' by default)',
